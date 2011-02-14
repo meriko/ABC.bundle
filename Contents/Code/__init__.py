@@ -1,4 +1,4 @@
-import string, datetime
+import re, string, datetime
 
 ##################################################################################################ABC
 PLUGIN_PREFIX = "/video/abc"
@@ -11,19 +11,19 @@ FEED_URL      = "http://cdn.abc.go.com/vp2/ws/s/contents/2000/utils/mov/13/9024/
 ART_URL       = "http://cdn.media.abc.go.com/m/images/shows/%s/bg/bkgd.jpg"
 
 ART           = "art-default.jpg"
-THUMB         = "icon-default.jpg"
+ICON          = "icon-default.jpg"
 
 ####################################################################################################
 def Start():
-    Plugin.AddPrefixHandler(PLUGIN_PREFIX, MainMenu, NAME, THUMB, ART)
+    Plugin.AddPrefixHandler(PLUGIN_PREFIX, MainMenu, NAME, ICON, ART)
     Plugin.AddViewGroup("InfoList", viewMode="InfoList", mediaType="items")
 
     MediaContainer.art = R(ART)
     MediaContainer.title1 = NAME
     MediaContainer.viewGroup = "InfoList"
 
-    DirectoryItem.thumb = R(THUMB)
-    VideoItem.thumb = R(THUMB)
+    DirectoryItem.thumb = R(ICON)
+    VideoItem.thumb = R(ICON)
 
     HTTP.CacheTime = CACHE_1HOUR
     HTTP.Headers['User-Agent'] = "Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.13) Gecko/20101203 Firefox/3.6.13"
@@ -42,7 +42,7 @@ def MainMenu():
         summary= description.xpath('.//p')[0].text
         showId = titleUrl.split('?')[0]
         showId = showId.rsplit('/', 1)[1]
-        dir.Append(Function(DirectoryItem(VideoPage, title, thumb=thumb, summary=summary, art=art), showId=showId, art=art))
+        dir.Append(Function(DirectoryItem(VideoPage, title, thumb=Function(Graphic, url=thumb, type="thumb"), summary=summary, art=Function(Graphic, url=art, type="art")), showId=showId, art=art))
     return dir 
 
 ####################################################################################################
@@ -67,7 +67,7 @@ def VideoPage(sender, showId, art):
         #Log(duration)
         id = link.rsplit('/', 2)[1]
         url = FEED_URL % (id)
-        dir.Append(Function(VideoItem(VideoPlayer, title=title, subtitle=subtitle, summary=summary, thumb=thumb, art=art), url=url))  
+        dir.Append(Function(VideoItem(VideoPlayer, title=title, subtitle=subtitle, summary=summary, thumb=Function(Graphic, url=thumb, type="thumb"), art=Function(Graphic, url=art, type="art")), url=url))  
     return dir
 
 ####################################################################################################
@@ -81,3 +81,14 @@ def VideoPlayer(sender, url):
         #Log(clip)
         player = "http://ll.media.abc.com/" + clip.replace("mp4:/","")
     return Redirect(VideoItem(player))
+
+####################################################################################################
+def Graphic(url, type):
+    try:
+        data = HTTP.Request(url, cacheTime=CACHE_1MONTH).content
+        return DataObject(data, 'image/jpeg')
+    except:
+        if type == "art":
+            return Redirect(R(ART))
+        else:
+            return Redirect(R(ICON))
