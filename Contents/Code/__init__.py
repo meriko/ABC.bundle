@@ -11,7 +11,7 @@ FEED_URL      = "http://cdn.abc.go.com/vp2/ws/s/contents/2000/utils/mov/13/9024/
 ART_URL       = "http://cdn.media.abc.go.com/m/images/shows/%s/bg/bkgd.jpg"
 
 ART           = "art-default.jpg"
-ICON          = "icon-default.jpg"
+ICON          = "icon-default.png"
 
 ####################################################################################################
 def Start():
