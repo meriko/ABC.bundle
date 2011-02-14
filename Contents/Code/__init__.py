@@ -1,8 +1,8 @@
-# PMS plugin framework
 import string, datetime
 
 ##################################################################################################ABC
-PLUGIN_PREFIX = "/video/ABC"
+PLUGIN_PREFIX = "/video/abc"
+NAME          = "ABC"
 
 ABC_ROOT      = "http://abc.go.com/"
 SHOW_LIST     = "http://cdn.abc.go.com/vp2/ws-supt/s/syndication/2000/rss/001/001/-1/-1/-1/-1/-1/-1"
@@ -15,62 +15,69 @@ THUMB         = "icon-default.jpg"
 
 ####################################################################################################
 def Start():
-  Plugin.AddPrefixHandler(PLUGIN_PREFIX, MainMenu, 'ABC', THUMB, ART)
-  Plugin.AddViewGroup("InfoList", viewMode="InfoList", mediaType="items")
-  
-  MediaContainer.art = R(ART)
-  DirectoryItem.thumb = R(THUMB)
+    Plugin.AddPrefixHandler(PLUGIN_PREFIX, MainMenu, NAME, THUMB, ART)
+    Plugin.AddViewGroup("InfoList", viewMode="InfoList", mediaType="items")
+
+    MediaContainer.art = R(ART)
+    MediaContainer.title1 = NAME
+    MediaContainer.viewGroup = "InfoList"
+
+    DirectoryItem.thumb = R(THUMB)
+    VideoItem.thumb = R(THUMB)
+
+    HTTP.CacheTime = CACHE_1HOUR
+    HTTP.Headers['User-Agent'] = "Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.13) Gecko/20101203 Firefox/3.6.13"
 
 ####################################################################################################
 def MainMenu():
-    dir = MediaContainer(mediaType='video')
+    dir = MediaContainer()
     content = XML.ElementFromURL(SHOW_LIST)
     for item in content.xpath('//item'):
-      title = item.xpath('./title')[0].text
-      artID = title.replace(': ', '-').replace(' ', '-').replace("'", "")
-      art = ART_URL % (artID)                           #MIGHT NOT WANT TO USE THIS ART & ALL SHOW DON'T HAVE ART
-      titleUrl = item.xpath('./link')[0].text
-      description = HTML.ElementFromString(item.xpath('./description')[0].text)
-      thumb = description.xpath('.//img')[0].get('src')
-      summary= description.xpath('.//p')[0].text
-      showID = titleUrl.split('?')[0]
-      showID = showID.rsplit('/', 1)[1]
-      dir.Append(Function(DirectoryItem(VideoPage, title,thumb=thumb, summary=summary, art=art), showID = showID, art=art))
+        title = item.xpath('./title')[0].text
+        artId = title.replace(': ', '-').replace(' ', '-').replace("'", "")
+        art = ART_URL % (artId)                           #MIGHT NOT WANT TO USE THIS ART & ALL SHOW DON'T HAVE ART
+        titleUrl = item.xpath('./link')[0].text
+        description = HTML.ElementFromString(item.xpath('./description')[0].text)
+        thumb = description.xpath('.//img')[0].get('src')
+        summary= description.xpath('.//p')[0].text
+        showId = titleUrl.split('?')[0]
+        showId = showId.rsplit('/', 1)[1]
+        dir.Append(Function(DirectoryItem(VideoPage, title, thumb=thumb, summary=summary, art=art), showId=showId, art=art))
     return dir 
 
 ####################################################################################################
-def VideoPage(sender, showID, art):
+def VideoPage(sender, showId, art):
     dir = MediaContainer(title2=sender.itemTitle)
-    episodeRSS = EPISODE_LIST % (showID)
-    content = XML.ElementFromURL(episodeRSS)
+    episodeRss = EPISODE_LIST % (showId)
+    content = XML.ElementFromURL(episodeRss)
     #Log(content.xpath("//text()"))
     for item in content.xpath('//item'):
         link = item.xpath('./link')[0].text
         title1 = item.xpath('./title')[0].text
         title = title1.split(' Full Episode')[0]
-        season=re.findall('s([0-9]+)',title1.split(' Full Episode')[-1])[0]
-        episode=re.findall('e([0-9]+)',title1.split(' Full Episode')[-1])[0]
-        subtitle='s'+season+'.'+'e'+episode
+        season = re.findall('s([0-9]+)', title1.split(' Full Episode')[-1])[0]
+        episode = re.findall('e([0-9]+)', title1.split(' Full Episode')[-1])[0]
+        subtitle = 's' + season + '.' + 'e' + episode
         description = HTML.ElementFromString(item.xpath('./description')[0].text)
         thumb = description.xpath('.//img')[0].get('src')
         summary = description.xpath('.//p')[0].text
-        
+
         #Log(subtitle)
         #duration = description.xpath("//text()")[3].split(': ')[1]   #SHOWS DURATION, NEEDS BETTER METHOD TO OBTAIN & CHANGE TO MILLISECONDS
         #Log(duration)
-        id=link.rsplit('/', 2)[1]
+        id = link.rsplit('/', 2)[1]
         url = FEED_URL % (id)
-        dir.Append(Function(VideoItem(VideoPlayer, title=title, subtitle=subtitle,summary=summary, thumb=thumb, art=art), url=url))  
+        dir.Append(Function(VideoItem(VideoPlayer, title=title, subtitle=subtitle, summary=summary, thumb=thumb, art=art), url=url))  
     return dir
-    
+
 ####################################################################################################
 def VideoPlayer(sender, url):
     dir = MediaContainer(title2=sender.itemTitle)
     Log(url)
-    content=XML.ElementFromURL(url)
+    content = XML.ElementFromURL(url)
     for item in content.xpath('//videos'):
-        clip=item.xpath('video[@bitrate="1000"]')[0].get('src')
-        #clip=item.get('src')             #MIGHT WANT TO SETUP PREFS FOR QUALITY???
+        clip = item.xpath('video[@bitrate="1000"]')[0].get('src')
+        #clip = item.get('src')             #MIGHT WANT TO SETUP PREFS FOR QUALITY???
         #Log(clip)
-        player="http://ll.media.abc.com/" + clip.replace("mp4:/","")
+        player = "http://ll.media.abc.com/" + clip.replace("mp4:/","")
     return Redirect(VideoItem(player))
