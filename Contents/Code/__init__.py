@@ -79,8 +79,9 @@ def VideoPlayer(sender, url):
         clip = item.xpath('video[@bitrate="1000"]')[0].get('src')
         #clip = item.get('src')             #MIGHT WANT TO SETUP PREFS FOR QUALITY???
         #Log(clip)
-        player = "http://ll.media.abc.com/" + clip.replace("mp4:/","")
-    return Redirect(VideoItem(player))
+        #player="http://ll.video.abc.com/" + clip.replace("mp4:/","")  #DIRECT FEED BROKE!!!
+        player = "rtmp://cp88586.edgefcs.net/ondemand/"    #WE'RE STREAMING
+    return Redirect(RTMPVideoItem(player, clip))
 
 ####################################################################################################
 def Graphic(url, type):
