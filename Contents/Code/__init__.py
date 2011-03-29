@@ -59,7 +59,8 @@ def VideoPage(sender, showId, art):
         episode = re.findall('e([0-9]+)', title1.split(' Full Episode')[-1])[0]
         subtitle = 's' + season + '.' + 'e' + episode
         description = HTML.ElementFromString(item.xpath('./description')[0].text)
-        thumb = description.xpath('.//img')[0].get('src')
+        try:thumb = description.xpath('.//img')[0].get('src')
+        except:thumb=""
         summary = description.xpath('.//p')[0].text
 
         #Log(subtitle)
