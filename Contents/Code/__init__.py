@@ -1,96 +1,102 @@
-import re, string, datetime
+import re
 
-##################################################################################################ABC
-PLUGIN_PREFIX = "/video/abc"
-NAME          = "ABC"
+NAME = "ABC"
+ART = "art-default.jpg"
+ICON = "icon-default.png"
 
-ABC_ROOT      = "http://abc.go.com/"
-SHOW_LIST     = "http://cdn.abc.go.com/vp2/ws-supt/s/syndication/2000/rss/001/001/-1/-1/-1/-1/-1/-1"
-EPISODE_LIST  = "http://cdn.abc.go.com/vp2/ws-supt/s/syndication/2000/rss/001/001/lf/-1/%s/-1/-1/-1"
-FEED_URL      = "http://cdn.abc.go.com/vp2/ws/s/contents/2000/utils/mov/13/9024/%s/432"
-ART_URL       = "http://cdn.media.abc.go.com/m/images/shows/%s/bg/bkgd.jpg"
+SHOWS = "http://cdn.abc.go.com/vp2/ws-supt/s/syndication/2000/rss/001/001/-1/-1/-1/-1/-1/-1"
+SEASONS = "http://abc.go.com/vp2/s/carousel?service=seasons&parser=VP2_Data_Parser_Seasons&showid=%s&view=season"
+EPISODES = "http://abc.go.com/vp2/s/carousel?service=playlists&parser=VP2_Data_Parser_Playlist&postprocess=VP2_Data_Carousel_ProcessPlaylist&showid=%s&seasonid=%s&vidtype=lf&view=showplaylist&playlistid=PL5515994&start=0&size=100&paging=1"
 
-ART           = "art-default.jpg"
-ICON          = "icon-default.png"
+VIDEO_INFO = "http://cdn.abc.go.com/vp2/ws/s/contents/2000/utils/mov/13/9024/%s/432"
 
 ####################################################################################################
 def Start():
-    Plugin.AddPrefixHandler(PLUGIN_PREFIX, MainMenu, NAME, ICON, ART)
-    Plugin.AddViewGroup("InfoList", viewMode="InfoList", mediaType="items")
 
-    MediaContainer.art = R(ART)
-    MediaContainer.title1 = NAME
-    MediaContainer.viewGroup = "InfoList"
+	Plugin.AddPrefixHandler("/video/abc", MainMenu, NAME, ICON, ART)
+	Plugin.AddViewGroup("InfoList", viewMode="InfoList", mediaType="items")
 
-    DirectoryItem.thumb = R(ICON)
-    VideoItem.thumb = R(ICON)
+	MediaContainer.art = R(ART)
+	MediaContainer.title1 = NAME
+	MediaContainer.viewGroup = "InfoList"
 
-    HTTP.CacheTime = CACHE_1HOUR
-    HTTP.Headers['User-Agent'] = "Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.13) Gecko/20101203 Firefox/3.6.13"
+	DirectoryItem.thumb = R(ICON)
+	VideoItem.thumb = R(ICON)
+
+	HTTP.CacheTime = CACHE_1HOUR
+	HTTP.Headers['User-Agent'] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:10.0.2) Gecko/20100101 Firefox/10.0.2"
 
 ####################################################################################################
 def MainMenu():
-    dir = MediaContainer()
-    content = XML.ElementFromURL(SHOW_LIST)
-    for item in content.xpath('//item'):
-        title = item.xpath('./title')[0].text
-        artId = title.replace(': ', '-').replace(' ', '-').replace("'", "")
-        art = ART_URL % (artId)                           #MIGHT NOT WANT TO USE THIS ART & ALL SHOW DON'T HAVE ART
-        titleUrl = item.xpath('./link')[0].text
-        description = HTML.ElementFromString(item.xpath('./description')[0].text)
-        thumb = description.xpath('.//img')[0].get('src')
-        summary= description.xpath('.//p')[0].text
-        showId = titleUrl.split('?')[0]
-        showId = showId.rsplit('/', 1)[1]
-        dir.Append(Function(DirectoryItem(VideoPage, title, thumb=Function(Graphic, url=thumb, type="thumb"), summary=summary, art=Function(Graphic, url=art, type="art")), showId=showId, art=art))
-    return dir 
+
+	dir = MediaContainer()
+
+	for show in XML.ElementFromURL(SHOWS, cacheTime=CACHE_1DAY).xpath('//item'):
+		title = show.xpath('./title')[0].text
+
+		description = HTML.ElementFromString(show.xpath('./description')[0].text)
+		summary = description.xpath('.//p')[0].text
+		thumb = description.xpath('.//img')[0].get('src')
+
+		link = show.xpath('./link')[0].text
+		showId = re.search('/(SH[0-9]+)', link).group(1)
+
+		dir.Append(Function(DirectoryItem(Season, title=title, summary=summary, thumb=Function(GetThumb, url=thumb)), showId=showId))
+
+	return dir
 
 ####################################################################################################
-def VideoPage(sender, showId, art):
-    dir = MediaContainer(title2=sender.itemTitle)
-    episodeRss = EPISODE_LIST % (showId)
-    content = XML.ElementFromURL(episodeRss)
-    #Log(content.xpath("//text()"))
-    for item in content.xpath('//item'):
-        link = item.xpath('./link')[0].text
-        title1 = item.xpath('./title')[0].text
-        title = title1.split(' Full Episode')[0]
-        season = re.findall('s([0-9]+)', title1.split(' Full Episode')[-1])[0]
-        episode = re.findall('e([0-9]+)', title1.split(' Full Episode')[-1])[0]
-        subtitle = 's' + season + '.' + 'e' + episode
-        description = HTML.ElementFromString(item.xpath('./description')[0].text)
-        try:thumb = description.xpath('.//img')[0].get('src')
-        except:thumb=""
-        summary = description.xpath('.//p')[0].text
+def Season(sender, showId):
 
-        #Log(subtitle)
-        #duration = description.xpath("//text()")[3].split(': ')[1]   #SHOWS DURATION, NEEDS BETTER METHOD TO OBTAIN & CHANGE TO MILLISECONDS
-        #Log(duration)
-        id = link.rsplit('/', 2)[1]
-        url = FEED_URL % (id)
-        dir.Append(Function(VideoItem(VideoPlayer, title=title, subtitle=subtitle, summary=summary, thumb=Function(Graphic, url=thumb, type="thumb"), art=Function(Graphic, url=art, type="art")), url=url))  
-    return dir
+	dir = MediaContainer(title2=sender.itemTitle)
+
+	for season in HTML.ElementFromURL(SEASONS % showId, cacheTime=CACHE_1DAY).xpath('//a'):
+		title = season.text
+		season = title.rsplit(' ', 1)[1]
+
+		dir.Append(Function(DirectoryItem(Episodes, title=title, season=season), showId=showId, season=season))
+
+	return dir
 
 ####################################################################################################
-def VideoPlayer(sender, url):
-    dir = MediaContainer(title2=sender.itemTitle)
-    Log(url)
-    content = XML.ElementFromURL(url)
-    for item in content.xpath('//videos'):
-        clip = item.xpath('video[@bitrate="1000"]')[0].get('src')
-        #clip = item.get('src')             #MIGHT WANT TO SETUP PREFS FOR QUALITY???
-        #Log(clip)
-        #player="http://ll.video.abc.com/" + clip.replace("mp4:/","")  #DIRECT FEED BROKE!!!
-        player = "rtmp://cp88586.edgefcs.net/ondemand/"    #WE'RE STREAMING
-    return Redirect(RTMPVideoItem(player, clip))
+def Episodes(sender, showId, season):
+
+	dir = MediaContainer(title2=sender.itemTitle)
+
+	for episode in HTML.ElementFromURL(EPISODES % (showId, season)).xpath('//div[@class="tile"]'):
+		title = episode.xpath('./div[@class="tile_title"]/a')[0].text
+		summary = episode.xpath('./div[@class="tile_desc"]')[0].text
+		thumb = episode.xpath('./div[@class="thumb"]/a/img')[0].get('src')
+
+		try:
+			sub = episode.xpath('./div[@class="show_tile_sub"]')[0].text
+			date = sub.rsplit(' ', 1)[1]
+			date = Datetime.ParseDate(date).date()
+			subtitle = 'Air date: ' + date.strftime('%a, %B %d %Y')
+		except:
+			subtitle = ''
+
+		link = episode.xpath('./div[@class="tile_title"]/a')[0].get('href')
+		episodeId = re.search('/(VD[0-9]+)', link).group(1)
+
+		dir.Append(Function(VideoItem(PlayVideo, title=title, summary='\n\n'.join([summary, subtitle]), thumb=Function(GetThumb, url=thumb)), episodeId=episodeId))
+
+	return dir
 
 ####################################################################################################
-def Graphic(url, type):
-    try:
-        data = HTTP.Request(url, cacheTime=CACHE_1MONTH).content
-        return DataObject(data, 'image/jpeg')
-    except:
-        if type == "art":
-            return Redirect(R(ART))
-        else:
-            return Redirect(R(ICON))
+def PlayVideo(sender, episodeId):
+
+	info = XML.ElementFromURL(VIDEO_INFO % episodeId)
+	streamer = 'rtmp://abcondemandfs.fplive.net/abcondemand/'
+	clip = info.xpath('//videos/video[@bitrate="1000"]')[0].get('src')
+
+	return Redirect(RTMPVideoItem(streamer, clip))
+
+####################################################################################################
+def GetThumb(url):
+
+	try:
+		data = HTTP.Request(url, cacheTime=CACHE_1MONTH).content
+		return DataObject(data, 'image/jpeg')
+	except:
+		return Redirect(R(ICON))
