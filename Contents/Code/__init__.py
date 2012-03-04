@@ -16,12 +16,12 @@ def Start():
 	Plugin.AddPrefixHandler("/video/abc", MainMenu, NAME, ICON, ART)
 	Plugin.AddViewGroup("InfoList", viewMode="InfoList", mediaType="items")
 
-	MediaContainer.art = R(ART)
-	MediaContainer.title1 = NAME
-	MediaContainer.viewGroup = "InfoList"
+	ObjectContainer.art = R(ART)
+	ObjectContainer.title1 = NAME
+	ObjectContainer.view_group = "InfoList"
 
-	DirectoryItem.thumb = R(ICON)
-	VideoItem.thumb = R(ICON)
+	DirectoryObject.thumb = R(ICON)
+	VideoClipObject.thumb = R(ICON)
 
 	HTTP.CacheTime = CACHE_1HOUR
 	HTTP.Headers['User-Agent'] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:10.0.2) Gecko/20100101 Firefox/10.0.2"
@@ -29,7 +29,7 @@ def Start():
 ####################################################################################################
 def MainMenu():
 
-	dir = MediaContainer()
+	oc = ObjectContainer()
 
 	for show in XML.ElementFromURL(SHOWS, cacheTime=CACHE_1DAY).xpath('//item'):
 		title = show.xpath('./title')[0].text
@@ -41,56 +41,43 @@ def MainMenu():
 		link = show.xpath('./link')[0].text
 		showId = re.search('/(SH[0-9]+)', link).group(1)
 
-		dir.Append(Function(DirectoryItem(Season, title=title, summary=summary, thumb=Function(GetThumb, url=thumb)), showId=showId))
+		oc.add(DirectoryObject(key=Callback(Season, title=title, showId=showId), title=title, summary=summary, thumb=Callback(GetThumb, url=thumb)))
 
-	return dir
+	return oc
 
 ####################################################################################################
-def Season(sender, showId):
+def Season(title, showId):
 
-	dir = MediaContainer(title2=sender.itemTitle)
+	oc = ObjectContainer(title2=title)
 
 	for season in HTML.ElementFromURL(SEASONS % showId, cacheTime=CACHE_1DAY).xpath('//a'):
 		title = season.text
 		season = title.rsplit(' ', 1)[1]
 
-		dir.Append(Function(DirectoryItem(Episodes, title=title, season=season), showId=showId, season=season))
+		oc.add(DirectoryObject(key=Callback(Episodes, title=title, showId=showId, season=season), title=title))
 
-	return dir
+	return oc
 
 ####################################################################################################
-def Episodes(sender, showId, season):
+def Episodes(title, showId, season):
 
-	dir = MediaContainer(title2=sender.itemTitle)
+	oc = ObjectContainer(title2=title)
 
 	for episode in HTML.ElementFromURL(EPISODES % (showId, season)).xpath('//div[@class="tile"]'):
+		url = episode.xpath('./div[@class="tile_title"]/a')[0].get('href')
 		title = episode.xpath('./div[@class="tile_title"]/a')[0].text
 		summary = episode.xpath('./div[@class="tile_desc"]')[0].text
 		thumb = episode.xpath('./div[@class="thumb"]/a/img')[0].get('src')
 
 		try:
-			sub = episode.xpath('./div[@class="show_tile_sub"]')[0].text
-			date = sub.rsplit(' ', 1)[1]
-			date = Datetime.ParseDate(date).date()
-			subtitle = 'Air date: ' + date.strftime('%a, %B %d %Y')
+			date = episode.xpath('./div[@class="show_tile_sub"]')[0].text.rsplit(' ', 1)[1]
+			originally_available_at = Datetime.ParseDate(date).date()
 		except:
-			subtitle = ''
+			originally_available_at = None
 
-		link = episode.xpath('./div[@class="tile_title"]/a')[0].get('href')
-		episodeId = re.search('/(VD[0-9]+)', link).group(1)
+		oc.add(VideoClipObject(url=url, title=title, summary=summary, thumb=Callback(GetThumb, url=thumb)))
 
-		dir.Append(Function(VideoItem(PlayVideo, title=title, summary='\n\n'.join([summary, subtitle]), thumb=Function(GetThumb, url=thumb)), episodeId=episodeId))
-
-	return dir
-
-####################################################################################################
-def PlayVideo(sender, episodeId):
-
-	info = XML.ElementFromURL(VIDEO_INFO % episodeId)
-	streamer = 'rtmp://abcondemandfs.fplive.net/abcondemand/'
-	clip = info.xpath('//videos/video[@bitrate="1000"]')[0].get('src')
-
-	return Redirect(RTMPVideoItem(streamer, clip))
+	return oc
 
 ####################################################################################################
 def GetThumb(url):
