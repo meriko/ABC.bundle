@@ -51,10 +51,11 @@ def Season(title, showId):
 	oc = ObjectContainer(title2=title)
 
 	for season in HTML.ElementFromURL(SEASONS % showId, cacheTime=CACHE_1DAY).xpath('//a'):
-		title = season.text
-		season = title.rsplit(' ', 1)[1]
-
-		oc.add(DirectoryObject(key=Callback(Episodes, title=title, showId=showId, season=season), title=title))
+		seasonid = season.get('seasonid')
+		if not seasonid:
+			title = season.text
+			seasonid = title.rsplit(' ', 1)[1]
+		oc.add(DirectoryObject(key=Callback(Episodes, title=title, showId=showId, season=seasonid), title=title))
 
 	return oc
 
