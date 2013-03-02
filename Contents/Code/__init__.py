@@ -80,7 +80,7 @@ def Episodes(title, showId, season):
 			url = url,
 			title = title,
 			summary = summary,
-			thumb = thumb = Resource.ContentsOfURLWithFallback(url=thumb)
+			thumb = Resource.ContentsOfURLWithFallback(url=thumb)
 		))
 
 	return oc
