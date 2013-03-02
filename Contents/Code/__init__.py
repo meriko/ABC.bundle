@@ -1,7 +1,4 @@
 NAME = "ABC"
-ART = "art-default.jpg"
-ICON = "icon-default.png"
-
 SHOWS = "http://cdn.abc.go.com/vp2/ws-supt/s/syndication/2000/rss/001/001/-1/-1/-1/-1/-1/-1"
 SEASONS = "http://abc.go.com/vp2/s/carousel?service=seasons&parser=VP2_Data_Parser_Seasons&showid=%s&view=season"
 EPISODES = "http://abc.go.com/vp2/s/carousel?service=playlists&parser=VP2_Data_Parser_Playlist&postprocess=VP2_Data_Carousel_ProcessPlaylist&showid=%s&seasonid=%s&vidtype=lf&view=showplaylist&playlistid=PL5515994&start=0&size=100&paging=1"
@@ -12,20 +9,12 @@ RE_SHOW_ID = Regex('/(SH[0-9]+)')
 ####################################################################################################
 def Start():
 
-	Plugin.AddViewGroup("InfoList", viewMode="InfoList", mediaType="items")
-
-	ObjectContainer.art = R(ART)
 	ObjectContainer.title1 = NAME
-	ObjectContainer.view_group = "InfoList"
-
-	DirectoryObject.thumb = R(ICON)
-	VideoClipObject.thumb = R(ICON)
-
 	HTTP.CacheTime = CACHE_1HOUR
-	HTTP.Headers['User-Agent'] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:15.0) Gecko/20100101 Firefox/15.0.1"
+	HTTP.Headers['User-Agent'] = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:19.0) Gecko/20100101 Firefox/19.0'
 
 ####################################################################################################
-@handler('/video/abc', NAME, art = ART, thumb = ICON)
+@handler('/video/abc', NAME)
 def MainMenu():
 
 	oc = ObjectContainer()
@@ -40,7 +29,12 @@ def MainMenu():
 		link = show.xpath('./link')[0].text
 		showId = RE_SHOW_ID.search(link).group(1)
 
-		oc.add(DirectoryObject(key=Callback(Season, title=title, showId=showId), title=title, summary=summary, thumb=Callback(GetThumb, url=thumb)))
+		oc.add(DirectoryObject(
+			key = Callback(Season, title=title, showId=showId),
+			title = title,
+			summary = summary,
+			thumb = Resource.ContentsOfURLWithFallback(url=thumb)
+		))
 
 	return oc
 
@@ -53,9 +47,14 @@ def Season(title, showId):
 	for season in HTML.ElementFromURL(SEASONS % showId, cacheTime=CACHE_1DAY).xpath('//a'):
 		title = season.text
 		seasonid = season.get('seasonid')
+
 		if not seasonid:
 			seasonid = title.rsplit(' ', 1)[1]
-		oc.add(DirectoryObject(key=Callback(Episodes, title=title, showId=showId, season=seasonid), title=title))
+
+		oc.add(DirectoryObject(
+			key = Callback(Episodes, title=title, showId=showId, season=seasonid),
+			title = title
+		))
 
 	return oc
 
@@ -77,15 +76,11 @@ def Episodes(title, showId, season):
 		except:
 			originally_available_at = None
 
-		oc.add(VideoClipObject(url=url, title=title, summary=summary, thumb=Callback(GetThumb, url=thumb)))
+		oc.add(VideoClipObject(
+			url = url,
+			title = title,
+			summary = summary,
+			thumb = thumb = Resource.ContentsOfURLWithFallback(url=thumb)
+		))
 
 	return oc
-
-####################################################################################################
-def GetThumb(url):
-
-	try:
-		data = HTTP.Request(url, cacheTime=CACHE_1MONTH).content
-		return DataObject(data, 'image/jpeg')
-	except:
-		return Redirect(R(ICON))
