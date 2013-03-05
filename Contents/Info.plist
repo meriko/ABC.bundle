@@ -7,16 +7,12 @@
 	<key>PlexClientPlatformExclusions</key>
 	<string>Roku</string>
 	<key>PlexClientPlatforms</key>
-	<string>*</string>
+	<string>iOS,Android,Safari</string>
 	<key>PlexFrameworkVersion</key>
 	<string>2</string>
 	<key>PlexPluginRegions</key>
 	<array>
 		<string>US</string>
-	</array>
-	<key>PlexFrameworkFlags</key>
-	<array>
-		<string>UseRealRTMP</string>
 	</array>
 </dict>
 </plist>
