@@ -12,6 +12,7 @@ def Start():
 	ObjectContainer.title1 = NAME
 	HTTP.CacheTime = CACHE_1HOUR
 	HTTP.Headers['User-Agent'] = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:19.0) Gecko/20100101 Firefox/19.0'
+	HTTP.Headers['X-Requested-With'] = 'XMLHttpRequest'
 
 ####################################################################################################
 @handler('/video/abc', NAME)
@@ -19,18 +20,21 @@ def MainMenu():
 
 	oc = ObjectContainer()
 
-	for show in XML.ElementFromURL(SHOWS, cacheTime=CACHE_1DAY).xpath('//item'):
-		title = show.xpath('./title')[0].text
+	for show in XML.ElementFromURL(SHOWS).xpath('//item'):
+		title = show.xpath('./title')[0].text.strip()
 
 		description = HTML.ElementFromString(show.xpath('./description')[0].text)
 		summary = description.xpath('.//p')[0].text
 		thumb = description.xpath('.//img')[0].get('src')
 
 		link = show.xpath('./link')[0].text
-		showId = RE_SHOW_ID.search(link).group(1)
+		show_id = RE_SHOW_ID.search(link)
+
+		if not show_id:
+			continue
 
 		oc.add(DirectoryObject(
-			key = Callback(Season, title=title, showId=showId),
+			key = Callback(Season, title=title, show_id=show_id.group(1)),
 			title = title,
 			summary = summary,
 			thumb = Resource.ContentsOfURLWithFallback(url=thumb)
@@ -40,19 +44,20 @@ def MainMenu():
 
 ####################################################################################################
 @route('/video/abc/season')
-def Season(title, showId):
+def Season(title, show_id):
 
 	oc = ObjectContainer(title2=title)
+	html = GetHTML(SEASONS % show_id)
 
-	for season in HTML.ElementFromURL(SEASONS % showId, cacheTime=CACHE_1DAY).xpath('//a'):
+	for season in html.xpath('//a'):
 		title = season.text
-		seasonid = season.get('seasonid')
+		season_id = season.get('seasonid')
 
-		if not seasonid:
-			seasonid = title.rsplit(' ', 1)[1]
+		if not season_id:
+			season_id = title.rsplit(' ', 1)[1]
 
 		oc.add(DirectoryObject(
-			key = Callback(Episodes, title=title, showId=showId, season=seasonid),
+			key = Callback(Episodes, title=title, show_id=show_id, season=season_id),
 			title = title
 		))
 
@@ -60,11 +65,12 @@ def Season(title, showId):
 
 ####################################################################################################
 @route('/video/abc/episodes')
-def Episodes(title, showId, season):
+def Episodes(title, show_id, season):
 
 	oc = ObjectContainer(title2=title)
+	html = GetHTML(EPISODES % (show_id, season))
 
-	for episode in HTML.ElementFromURL(EPISODES % (showId, season)).xpath('//div[@class="tile"]'):
+	for episode in html.xpath('//div[@class="tile"]'):
 		url = episode.xpath('./div[@class="tile_title"]/a')[0].get('href')
 		title = episode.xpath('./div[@class="tile_title"]/a')[0].text
 		summary = episode.xpath('./div[@class="tile_desc"]')[0].text
@@ -84,3 +90,13 @@ def Episodes(title, showId, season):
 		))
 
 	return oc
+
+####################################################################################################
+def GetHTML(url):
+
+	try:
+		html = HTML.ElementFromURL(url, sleep=5.0)
+	except:
+		html = HTML.ElementFromURL(url, cacheTime=0)
+
+	return html
