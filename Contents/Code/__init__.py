@@ -20,6 +20,13 @@ def MainMenu():
 
 	oc = ObjectContainer()
 
+	if not Client.Platform in ('iOS', 'Android') and not (Client.Platform == 'Safari' and Platform.OS == 'MacOSX'):
+		if Client.Product == 'Web Client':
+			oc.add(Error('This channel isn\'t supported on %s' % Client.Platform))
+		oc.header = 'Not supported'
+		oc.message = 'This channel isn\'t supported on %s' % Client.Platform
+		return oc
+
 	for show in XML.ElementFromURL(SHOWS).xpath('//item'):
 		title = show.xpath('./title')[0].text.strip()
 
@@ -41,6 +48,15 @@ def MainMenu():
 		))
 
 	return oc
+
+####################################################################################################
+@route('/video/abc/error')
+def Error(title):
+
+	return DirectoryObject(
+		key = Callback(Error, title=title),
+		title = title
+	)
 
 ####################################################################################################
 @route('/video/abc/season')
