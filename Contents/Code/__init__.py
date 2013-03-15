@@ -20,8 +20,8 @@ def MainMenu():
 
 	oc = ObjectContainer()
 
-	if not Client.Platform in ('iOS') and not (Client.Platform == 'Safari' and Platform.OS == 'MacOSX'):
-		if Client.Product == 'Web Client':
+	if not Client.Platform in ('iOS', 'Roku') and not (Client.Platform == 'Safari' and Platform.OS == 'MacOSX'):
+		if Client.Platform in ('Android') or Client.Product in ('Web Client'):
 			oc.add(Error('This channel isn\'t supported on %s' % Client.Platform))
 		oc.header = 'Not supported'
 		oc.message = 'This channel isn\'t supported on %s' % Client.Platform
