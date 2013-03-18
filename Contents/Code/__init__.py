@@ -5,6 +5,7 @@ EPISODES = "http://abc.go.com/vp2/s/carousel?service=playlists&parser=VP2_Data_P
 
 VIDEO_INFO = "http://cdn.abc.go.com/vp2/ws/s/contents/2000/utils/mov/13/9024/%s/432"
 RE_SHOW_ID = Regex('/(SH[0-9]+)')
+RE_AIR_DATE = Regex('(?P<month>\d{2})/(?P<day>\d{2})/(?P<year>\d{2})$')
 
 ####################################################################################################
 def Start():
@@ -29,6 +30,17 @@ def MainMenu():
 
 	for show in XML.ElementFromURL(SHOWS).xpath('//item'):
 		title = show.xpath('./title')[0].text.strip()
+
+		# Exclude certain shows
+		if title in (
+			'ABC News Specials',
+			'Boston Med',
+			'Good Afternoon America',
+			'Nightline Prime: Secrets of Your Mind',
+			'Primetime Nightline: Beyond Belief',
+			'Primetime: Family Secrets',
+			'Rising Up: Five Years Since Katrina'
+		): continue
 
 		description = HTML.ElementFromString(show.xpath('./description')[0].text)
 		summary = description.xpath('.//p')[0].text
@@ -77,6 +89,9 @@ def Season(title, show_id):
 			title = title
 		))
 
+		# Just show the most recent season for now. Older videos are not available in the format we want them in.
+		break
+
 	return oc
 
 ####################################################################################################
@@ -87,14 +102,23 @@ def Episodes(title, show_id, season):
 	html = GetHTML(EPISODES % (show_id, season))
 
 	for episode in html.xpath('//div[@class="tile"]'):
-		url = episode.xpath('./div[@class="tile_title"]/a')[0].get('href')
-		title = episode.xpath('./div[@class="tile_title"]/a')[0].text
-		summary = episode.xpath('./div[@class="tile_desc"]')[0].text
-		thumb = episode.xpath('./div[@class="thumb"]/a/img')[0].get('src')
+		url = episode.xpath('./div[@class="tile_title"]/a/@href')[0]
+
+		if not '/VDKA' in url:
+			continue
+
+		if '/watch/this-week/' in url:
+			url = url.replace('abc.go.com', 'abcnews.go.com')
+
+		title = episode.xpath('./div[@class="tile_title"]/a/text()')[0]
+		summary = episode.xpath('./div[@class="tile_desc"]/text()')[0]
+		thumb = episode.xpath('./div[@class="thumb"]/a/img/@src')[0]
 
 		try:
-			date = episode.xpath('./div[@class="show_tile_sub"]')[0].text.rsplit(' ', 1)[1]
-			originally_available_at = Datetime.ParseDate(date).date()
+			air_date = episode.xpath('./div[@class="show_tile_sub"]/text()')[0]
+			date = RE_AIR_DATE.search(air_date).groupdict()
+			air_date = '%s-%s-20%s' % (date['month'], date['day'], date['year'])
+			originally_available_at = Datetime.ParseDate(air_date).date()
 		except:
 			originally_available_at = None
 
