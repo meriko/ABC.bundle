@@ -22,8 +22,6 @@ def MainMenu():
 	oc = ObjectContainer()
 
 	if not Client.Platform in ('Android', 'iOS', 'Roku') and not (Client.Platform == 'Safari' and Platform.OS == 'MacOSX'):
-		if Client.Product is not None and Client.Product in ('Web Client'):
-			oc.add(Error('This channel is not supported on %s' % (Client.Platform if Client.Platform is not None else 'this client')))
 		oc.header = 'Not supported'
 		oc.message = 'This channel is not supported on %s' % (Client.Platform if Client.Platform is not None else 'this client')
 		return oc
@@ -60,15 +58,6 @@ def MainMenu():
 		))
 
 	return oc
-
-####################################################################################################
-@route('/video/abc/error')
-def Error(title):
-
-	return DirectoryObject(
-		key = Callback(Error, title=title),
-		title = title
-	)
 
 ####################################################################################################
 @route('/video/abc/season')
