@@ -3,8 +3,7 @@ SHOWS = "http://cdn.abc.go.com/vp2/ws-supt/s/syndication/2000/rss/001/001/-1/-1/
 SEASONS = "http://abc.go.com/vp2/s/carousel?service=seasons&parser=VP2_Data_Parser_Seasons&showid=%s&view=season"
 EPISODES = "http://abc.go.com/vp2/s/carousel?service=playlists&parser=VP2_Data_Parser_Playlist&postprocess=VP2_Data_Carousel_ProcessPlaylist&showid=%s&seasonid=%s&vidtype=lf&view=showplaylist&playlistid=PL5515994&start=0&size=100&paging=1"
 
-VIDEO_INFO = "http://cdn.abc.go.com/vp2/ws/s/contents/2000/utils/mov/13/9024/%s/432"
-RE_SHOW_ID = Regex('/(SH[0-9]+)')
+RE_SHOW_ID = Regex('/(SH\d+)')
 RE_AIR_DATE = Regex('(?P<month>\d{2})/(?P<day>\d{2})/(?P<year>\d{2})$')
 
 ####################################################################################################
@@ -12,7 +11,7 @@ def Start():
 
 	ObjectContainer.title1 = NAME
 	HTTP.CacheTime = CACHE_1HOUR
-	HTTP.Headers['User-Agent'] = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:19.0) Gecko/20100101 Firefox/19.0'
+	HTTP.Headers['User-Agent'] = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:22.0) Gecko/20100101 Firefox/22.0'
 	HTTP.Headers['X-Requested-With'] = 'XMLHttpRequest'
 
 ####################################################################################################
