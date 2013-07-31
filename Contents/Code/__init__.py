@@ -89,7 +89,7 @@ def Episodes(title, show_id, season):
 	oc = ObjectContainer(title2=title)
 	html = GetHTML(EPISODES % (show_id, season))
 
-	for episode in html.xpath('//div[@class="tile"]'):
+	for episode in html.xpath('//div[contains(@class, "reg_tile")]'):
 		url = episode.xpath('./div[@class="tile_title"]/a/@href')[0]
 
 		if not '/VDKA' in url:
