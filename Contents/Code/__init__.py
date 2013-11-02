@@ -41,7 +41,6 @@ def MainMenu():
 
 		description = HTML.ElementFromString(show.xpath('./description')[0].text)
 		summary = description.xpath('.//p')[0].text
-		thumb = description.xpath('.//img')[0].get('src')
 
 		link = show.xpath('./link')[0].text
 		show_id = RE_SHOW_ID.search(link)
@@ -52,8 +51,7 @@ def MainMenu():
 		oc.add(DirectoryObject(
 			key = Callback(Season, title=title, show_id=show_id.group(1)),
 			title = title,
-			summary = summary,
-			thumb = Resource.ContentsOfURLWithFallback(url=thumb)
+			summary = summary
 		))
 
 	return oc
