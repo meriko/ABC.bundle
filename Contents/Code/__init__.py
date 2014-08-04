@@ -1,5 +1,5 @@
 NAME = "ABC"
-BASE_URL = "http://watchabc.go.com"
+BASE_URL = "http://abc.go.com"
 SHOWS = "http://cdn.abc.go.com/vp2/ws-supt/s/syndication/2000/rss/001/001/-1/-1/-1/-1/-1/-1"
 SEASONS = "http://abc.go.com/vp2/s/carousel?service=seasons&parser=VP2_Data_Parser_Seasons&showid=%s&view=season"
 EPISODES = "http://abc.go.com/vp2/s/carousel?service=playlists&parser=VP2_Data_Parser_Playlist&postprocess=VP2_Data_Carousel_ProcessPlaylist&showid=%s&seasonid=%s&vidtype=lf&view=showplaylist&playlistid=PL5515994&start=0&size=100&paging=1"
@@ -93,7 +93,7 @@ def Episodes(title, show_id, season):
 		if not url.startswith('http://'):
 			url = BASE_URL + url
 
-		if not '/VDKA' in url:
+		if not '/VDKA' in url and not '/redirect/fep?videoid=VDKA' in url:
 			continue
 
 		if '/watch/this-week/' in url:
