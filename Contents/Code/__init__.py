@@ -37,7 +37,8 @@ def MainMenu():
 			'Nightline Prime: Secrets of Your Mind',
 			'Primetime Nightline: Beyond Belief',
 			'Primetime: Family Secrets',
-			'Rising Up: Five Years Since Katrina'
+			'Rising Up: Five Years Since Katrina',
+			'Sandbox'
 		): continue
 
 		description = HTML.ElementFromString(show.xpath('./description')[0].text)
