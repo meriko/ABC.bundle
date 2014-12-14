@@ -113,7 +113,7 @@ def Episodes(title, show_id, season):
 			originally_available_at = None
 
 		oc.add(VideoClipObject(
-			url = url,
+			url = '%s#%s' % (url, show_id),
 			title = title,
 			summary = summary,
 			thumb = Resource.ContentsOfURLWithFallback(url=thumb)
