@@ -31,13 +31,9 @@ def MainMenu():
 
 		# Exclude certain shows
 		if title in (
+			'A Charlie Brown Christmas',
+			'A Charlie Brown Thanksgiving',
 			'ABC News Specials',
-			'Boston Med',
-			'Good Afternoon America',
-			'Nightline Prime: Secrets of Your Mind',
-			'Primetime Nightline: Beyond Belief',
-			'Primetime: Family Secrets',
-			'Rising Up: Five Years Since Katrina',
 			'Sandbox'
 		): continue
 
