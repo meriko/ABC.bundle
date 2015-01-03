@@ -21,7 +21,7 @@ def MainMenu():
 
 	oc = ObjectContainer()
 
-	if not Client.Platform in ('Android', 'iOS', 'Roku') and not (Client.Platform == 'Safari' and Request.Headers['X-Plex-Device'] == 'OSX'):
+	if not Client.Platform in ('Android', 'iOS', 'Roku') and not (Client.Platform == 'Safari' and Platform.OS == 'MacOSX'):
 		oc.header = 'Not supported'
 		oc.message = 'This channel is not supported on %s' % (Client.Platform if Client.Platform is not None else 'this client')
 		return oc
